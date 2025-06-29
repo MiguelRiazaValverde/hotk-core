@@ -1,3 +1,3 @@
-# `global-hotkey-win32-arm64-msvc`
+# `hotk-core-win32-arm64-msvc`
 
 This is the **aarch64-pc-windows-msvc** binary for `global-hotkey`

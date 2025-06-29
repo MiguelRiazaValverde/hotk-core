@@ -1,5 +1,5 @@
 {
-  "name": "global-hotkey-darwin-x64",
+  "name": "hotk-core-darwin-x64",
   "version": "0.0.0",
   "os": [
     "darwin"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "global-hotkey.darwin-x64.node",
+  "main": "hotk-core.darwin-x64.node",
   "files": [
-    "global-hotkey.darwin-x64.node"
+    "hotk-core.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {

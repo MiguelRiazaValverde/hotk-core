@@ -240,7 +240,11 @@ export const enum EventType {
   Pressed = 0,
   Released = 1
 }
-export declare class HotkeyDesc {
+export const enum ResponseCode {
+  Ok = 'Ok',
+  Error = 'Error'
+}
+export declare class Desc {
   code: KeyCode
   mods: Array<Mods>
 }
@@ -250,7 +254,7 @@ export declare class Event {
   eventType: EventType
 }
 export declare class HotkeyReponse {
-  code: string
+  code: ResponseCode
   id: number
   error: string
 }

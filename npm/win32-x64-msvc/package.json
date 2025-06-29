@@ -1,5 +1,5 @@
 {
-  "name": "global-hotkey-win32-x64-msvc",
+  "name": "hotk-core-win32-x64-msvc",
   "version": "0.0.0",
   "os": [
     "win32"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "global-hotkey.win32-x64-msvc.node",
+  "main": "hotk-core.win32-x64-msvc.node",
   "files": [
-    "global-hotkey.win32-x64-msvc.node"
+    "hotk-core.win32-x64-msvc.node"
   ],
   "license": "MIT",
   "engines": {

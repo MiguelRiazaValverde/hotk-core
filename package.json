@@ -1,10 +1,10 @@
 {
-  "name": "global-hotkey",
+  "name": "@hotk/core",
   "version": "0.0.0",
   "main": "index.js",
   "types": "index.d.ts",
   "napi": {
-    "name": "global-hotkey",
+    "name": "core",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
