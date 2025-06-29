@@ -220,6 +220,8 @@ export const enum KeyCode {
   ShowAllWindows = 'ShowAllWindows',
   ZoomToggle = 'ZoomToggle'
 }
+export declare function keyCodeKeys(): Array<string>
+export declare function keyCodeToHuman(keyCode: KeyCode): string | null
 export const enum Mods {
   Control = 'Control',
   Alt = 'Alt',
@@ -236,35 +238,164 @@ export const enum Mods {
   Shift = 'Shift',
   Super = 'Super'
 }
+export interface Desc {
+  code: KeyCode
+  mods: Array<Mods>
+}
 export const enum EventType {
   Pressed = 0,
   Released = 1
+}
+export interface Event {
+  id: number
+  code: KeyCode
+  mods: Array<Mods>
+  eventType: EventType
 }
 export const enum ResponseCode {
   Ok = 'Ok',
   Error = 'Error'
 }
-export declare class Desc {
-  code: KeyCode
-  mods: Array<Mods>
-}
-export declare class Event {
-  code: KeyCode
-  mods: Array<Mods>
-  eventType: EventType
-}
-export declare class HotkeyReponse {
+/**
+ * Returns a singleton instance of `HotkManager`.
+ *
+ * All `HotkManager` instances share the same internal state, allowing global coordination of hotkeys across your application.
+ *
+ * @example
+ * ```js
+ * import { hotk } from '@hotk/core';
+ *
+ * const manager = hotk();
+ * ```
+*/
+export declare function hotk(): HotkManager | null
+/**
+ * Represents a response from a hotkey operation.
+ *
+ * Contains the status code, an identifier, and an error message if applicable.
+*/
+export declare class HotkReponse {
   code: ResponseCode
   id: number
-  error: string
+  error?: string
+  /**
+  * Checks whether the response indicates success.
+  *
+  * @returns `true` if the operation was successful, otherwise `false`.
+  */
+  isOk(): boolean
 }
-export declare class HotKeys {
-  static create(): HotKeys | null
-  register(mods: Array<Mods>, code: KeyCode): HotkeyReponse
-  unregister(mods: Array<Mods>, code: KeyCode): HotkeyReponse
-  takePoll(): HotKeysPoll | null
+/**
+ * Manages global hotkeys by handling registration, unregistration and listening for hotkey events.
+*/
+export declare class HotkManager {
+  /**
+  * Registers a global hotkey.
+  *
+  * @example
+  * ```js
+  * import { hotk, Mods, KeyCode } from '@hotk/core';
+  *
+  * // Get the singleton instance
+  * const manager = hotk();
+  *
+  * // Register Ctrl + A as a hotkey
+  * const result = manager.register([Mods.Control], KeyCode.KeyA);
+  *
+  * if (result.isOk()) {
+  *   console.log('Hotkey successfully registered');
+  * } else {
+  *   console.error('Failed to register hotkey');
+  * }
+  *
+  * // Listen for hotkey events
+  * manager.onEvent((event) => {
+  *   console.log('Received event:', event);
+  * }, false);
+  * ```
+  */
+  register(mods: Array<Mods>, code: KeyCode): HotkReponse
+  /**
+  * Unregisters a global hotkey.
+  *
+  * @example
+  * ```js
+  * import { hotk, Mods, KeyCode } from '@hotk/core';
+  *
+  * // Get the singleton instance
+  * const manager = hotk();
+  *
+  * // Register Ctrl + A as a hotkey
+  * const result = manager.register([Mods.Control], KeyCode.KeyA);
+  *
+  * // Listen for hotkey events
+  * manager.onEvent((event) => {
+  *   console.log('Received event:', event);
+  * }, false);
+  *
+  * // Unregister the hotkey after 3 seconds
+  * setTimeout(() => {
+  *   manager.unregister([Mods.Control], KeyCode.KeyA);
+  * }, 3000);
+  * ```
+  */
+  unregister(mods: Array<Mods>, code: KeyCode): HotkReponse
+  /**
+  * Listen for global hotkey events.
+  *
+  * @param callback - A function that will be called with each hotkey event.
+  * @param unref - Optional. If `true` (default), the callback will be unreferenced,
+  *                meaning the Node.js process can exit naturally if no other tasks remain.
+  *                If `false`, the process will stay alive waiting for hotkey events.
+  *
+  * @example
+  * ```js
+  * import { hotk, Mods, KeyCode } from '@hotk/core';
+  *
+  * // Get the singleton instance
+  * const manager = hotk();
+  *
+  * // Register Ctrl + A as a hotkey
+  * const result = manager.register([Mods.Control], KeyCode.KeyA);
+  *
+  * // Listen for hotkey events
+  * manager.onEvent((event) => {
+  *   console.log('Received event:', event);
+  * }, false);
+  * ```
+  */
+  onEvent(callback: (event: Event) => void, unref?: boolean): void
+  /**
+  * Stops listening for hotkey events.
+  *
+  * This is required to allow the Node.js process to exit when `onEvent` was called without `unref: true`.
+  *
+  * @example
+  * ```js
+  * import { hotk, Mods, KeyCode } from '@hotk/core';
+  *
+  * // Get the singleton instance
+  * const manager = hotk();
+  *
+  * // Register Ctrl + A as a hotkey
+  * const result = manager.register([Mods.Control], KeyCode.KeyA);
+  *
+  * if (result.isOk()) {
+  *   console.log('Hotkey successfully registered');
+  * } else {
+  *   console.error('Failed to register hotkey');
+  * }
+  *
+  * // Start listening for hotkey events without unref
+  * manager.onEvent((event) => {
+  *   console.log('Received event:', event);
+  * }, false);
+  *
+  * // Stop listening after 3 seconds so the process can exit
+  * setTimeout(() => {
+  *   manager.destroy();
+  * }, 3000);
+  * ```
+  */
   destroy(): void
-}
-export declare class HotKeysPoll {
-  poll(): Promise<Event | null>
 }

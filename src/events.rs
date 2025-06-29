@@ -16,41 +16,63 @@ pub enum Response {
 }
 
 impl Response {
-  pub fn to_napi(&self) -> HotkeyReponse {
+  pub fn to_napi(&self) -> HotkReponse {
     match self {
-      Response::OkRegister { id } => HotkeyReponse {
+      Response::OkRegister { id } => HotkReponse {
         code: ResponseCode::Ok,
         id: *id,
-        error: String::new(),
+        error: None,
       },
-      Response::ErrorRegister { id, error } => HotkeyReponse {
+      Response::ErrorRegister { id, error } => HotkReponse {
         code: ResponseCode::Error,
         id: *id,
-        error: error.to_string(),
+        error: Some(error.to_string()),
       },
-      Response::OkUnregister { id } => HotkeyReponse {
+      Response::OkUnregister { id } => HotkReponse {
         code: ResponseCode::Ok,
         id: *id,
-        error: String::new(),
+        error: None,
       },
-      Response::ErrorUnregister { id, error } => HotkeyReponse {
+      Response::ErrorUnregister { id, error } => HotkReponse {
         code: ResponseCode::Error,
         id: *id,
-        error: error.to_string(),
+        error: Some(error.to_string()),
       },
     }
   }
 }
 
+/**
+ * Represents the possible response codes for hotkey operations.
+ *
+ * - `Ok`: The operation was successful.
+ * - `Error`: The operation failed.
+ */
 #[napi(string_enum)]
 pub enum ResponseCode {
   Ok,
   Error,
 }
 
+/**
+ * Represents a response from a hotkey operation.
+ */
 #[napi]
-pub struct HotkeyReponse {
+pub struct HotkReponse {
   pub code: ResponseCode,
   pub id: u32,
-  pub error: String,
+  pub error: Option<String>,
+}
+
+#[napi]
+impl HotkReponse {
+  /**
+   * Checks whether the response indicates success.
+   *
+   * @returns `true` if the operation was successful, otherwise `false`.
+   */
+  #[napi]
+  pub fn is_ok(&self) -> bool {
+    matches!(self.code, ResponseCode::Ok)
+  }
 }

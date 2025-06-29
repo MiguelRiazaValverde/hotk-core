@@ -310,14 +310,14 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { KeyCode, Mods, Desc, EventType, Event, ResponseCode, HotkeyReponse, HotKeys, HotKeysPoll } = nativeBinding
+const { KeyCode, keyCodeKeys, keyCodeToHuman, Mods, EventType, ResponseCode, HotkReponse, HotkManager, hotk } = nativeBinding
 
 module.exports.KeyCode = KeyCode
+module.exports.keyCodeKeys = keyCodeKeys
+module.exports.keyCodeToHuman = keyCodeToHuman
 module.exports.Mods = Mods
-module.exports.Desc = Desc
 module.exports.EventType = EventType
-module.exports.Event = Event
 module.exports.ResponseCode = ResponseCode
-module.exports.HotkeyReponse = HotkeyReponse
-module.exports.HotKeys = HotKeys
-module.exports.HotKeysPoll = HotKeysPoll
+module.exports.HotkReponse = HotkReponse
+module.exports.HotkManager = HotkManager
+module.exports.hotk = hotk

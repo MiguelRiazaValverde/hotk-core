@@ -1,24 +1,12 @@
 import test from 'ava'
 
-import { HotKeys, KeyCode, Mods } from '../index.js'
-
-async function poll(poll) {
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-  console.log((await poll.poll()).code);
-}
+import { hotk, KeyCode, Mods } from '../index.js'
 
 test('_', async t => {
+  const manager = hotk();
+  const response = manager.register([Mods.Control], KeyCode.KeyA);
 
-  const n = HotKeys.create();
-  await n.register([Mods.Control], KeyCode.KeyA);
+  manager.onEvent(console.log);
 
-  const p = n.takePoll();
-  poll(p);
-
-  t.truthy(true);
+  t.truthy(response.isOk());
 });
