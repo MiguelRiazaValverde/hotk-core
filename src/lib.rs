@@ -14,7 +14,7 @@ use std::sync::Mutex;
 use crate::code::Desc;
 use crate::code::Event;
 use crate::code::KeyCode;
-use crate::code::Mods;
+use crate::code::Mod;
 use crate::events::HotkReponse;
 use crate::events::Response;
 
@@ -64,17 +64,87 @@ pub struct HotkManager {
 #[napi]
 impl HotkManager {
   /**
-   * Registers a global hotkey.
+   * Initializes the hotkey event listener.
+   *
+   * This method sets up the callback that will be invoked for every global hotkey event.
+   * It can only be called once per program. Subsequent calls will do nothing and return `false`.
+   *
+   * @param on_event - A function that will be called with each hotkey event.
    *
    * @example
    * ```js
-   * import { hotk, Mods, KeyCode } from '@hotk/core';
+   * import { hotk, Mod, KeyCode } from '@hotk/core';
    *
    * // Get the singleton instance
    * const manager = hotk();
    *
    * // Register Ctrl + A as a hotkey
-   * const result = manager.register([Mods.Control], KeyCode.KeyA);
+   * const result = manager.register([Mod.Control], KeyCode.KeyA);
+   *
+   * // Listen for hotkey events
+   * manager.init((event) => {
+   *   console.log('Received event:', event);
+   * });
+   * ```
+   */
+  #[napi(ts_args_type = "on_event: (event: Event) => void")]
+  pub fn init(&mut self, on_event: JsFunction) -> napi::Result<bool> {
+    let mut lock = self.hotk.lock().unwrap();
+
+    if lock.tsfn.is_some() {
+      return Ok(false);
+    }
+
+    let hotkeys = lock.hotkeys.clone();
+
+    if let Some(tsfn) = lock.tsfn.take() {
+      tsfn.abort()?;
+    }
+
+    let tsfn: ThreadsafeFunction<Event, ErrorStrategy::Fatal> = on_event
+      .create_threadsafe_function(0, |ctx| {
+        let event: Event = ctx.value;
+        ctx.env.create_object().and_then(|mut obj| {
+          obj.set("id", event.id)?;
+          obj.set("code", event.code)?;
+          obj.set("mods", event.mods)?;
+          obj.set("eventType", event.event_type)?;
+          Ok(vec![obj])
+        })
+      })?;
+
+    lock.tsfn = Some(tsfn.clone());
+
+    GlobalHotKeyEvent::set_event_handler(Some(move |event: GlobalHotKeyEvent| {
+      if let Some(desc) = hotkeys.lock().unwrap().get(&event.id).cloned() {
+        let ev = Event {
+          id: event.id,
+          code: desc.code,
+          mods: desc.mods,
+          event_type: match event.state {
+            global_hotkey::HotKeyState::Pressed => code::EventType::Pressed,
+            global_hotkey::HotKeyState::Released => code::EventType::Released,
+          },
+        };
+        tsfn.call(ev, ThreadsafeFunctionCallMode::NonBlocking);
+      }
+    }));
+
+    Ok(true)
+  }
+
+  /**
+   * Registers a global hotkey.
+   *
+   * @example
+   * ```js
+   * import { hotk, Mod, KeyCode } from '@hotk/core';
+   *
+   * // Get the singleton instance
+   * const manager = hotk();
+   *
+   * // Register Ctrl + A as a hotkey
+   * const result = manager.register([Mod.Control], KeyCode.KeyA);
    *
    * if (result.isOk()) {
    *   console.log('Hotkey successfully registered');
@@ -83,13 +153,13 @@ impl HotkManager {
    * }
    *
    * // Listen for hotkey events
-   * manager.onEvent((event) => {
+   * manager.init((event) => {
    *   console.log('Received event:', event);
-   * }, false);
+   * });
    * ```
    */
   #[napi]
-  pub fn register(&self, mods: Vec<Mods>, code: KeyCode) -> HotkReponse {
+  pub fn register(&self, mods: Vec<Mod>, code: KeyCode) -> HotkReponse {
     let lock = self.hotk.lock().unwrap();
 
     let (hotkey, response) = lock.manager.register(
@@ -113,27 +183,27 @@ impl HotkManager {
    *
    * @example
    * ```js
-   * import { hotk, Mods, KeyCode } from '@hotk/core';
+   * import { hotk, Mod, KeyCode } from '@hotk/core';
    *
    * // Get the singleton instance
    * const manager = hotk();
    *
    * // Register Ctrl + A as a hotkey
-   * const result = manager.register([Mods.Control], KeyCode.KeyA);
+   * const result = manager.register([Mod.Control], KeyCode.KeyA);
    *
    * // Listen for hotkey events
-   * manager.onEvent((event) => {
+   * manager.init((event) => {
    *   console.log('Received event:', event);
-   * }, false);
+   * });
    *
    * // Unregister the hotkey after 3 seconds
    * setTimeout(() => {
-   *   manager.unregister([Mods.Control], KeyCode.KeyA);
+   *   manager.unregister([Mod.Control], KeyCode.KeyA);
    * }, 3000);
    * ```
    */
   #[napi]
-  pub fn unregister(&self, mods: Vec<Mods>, code: KeyCode) -> HotkReponse {
+  pub fn unregister(&self, mods: Vec<Mod>, code: KeyCode) -> HotkReponse {
     let lock = self.hotk.lock().unwrap();
 
     let (hotkey, response) = lock.manager.unregister(
@@ -149,93 +219,71 @@ impl HotkManager {
   }
 
   /**
-   * Listen for global hotkey events.
+   * Allows the Node.js process to exit naturally if no other tasks are pending.
    *
-   * @param callback - A function that will be called with each hotkey event.
-   * @param unref - Optional. If `true` (default), the callback will be unreferenced,
-   *                meaning the Node.js process can exit naturally if no other tasks remain.
-   *                If `false`, the process will stay alive waiting for hotkey events.
+   * This detaches the internal hotkey event callback from the event loop,
+   * meaning the process won't be held open just to listen for hotkey events.
+   *
+   * @returns `true` if the operation succeeded, `false` otherwise.
    *
    * @example
    * ```js
-   * import { hotk, Mods, KeyCode } from '@hotk/core';
-   *
-   * // Get the singleton instance
    * const manager = hotk();
-   *
-   * // Register Ctrl + A as a hotkey
-   * const result = manager.register([Mods.Control], KeyCode.KeyA);
-   *
-   * // Listen for hotkey events
-   * manager.onEvent((event) => {
-   *   console.log('Received event:', event);
-   * }, false);
+   * manager.init(console.log);
+   * manager.unref(); // Now the process can exit if nothing else is running.
    * ```
    */
-  #[napi(ts_args_type = "callback: (event: Event) => void, unref?: boolean")]
-  pub fn on_event(
-    &mut self,
-    env: Env,
-    callback: JsFunction,
-    unref: Option<bool>,
-  ) -> napi::Result<()> {
+  #[napi]
+  pub fn unref(&self, env: Env) -> bool {
     let mut lock = self.hotk.lock().unwrap();
-    let hotkeys = lock.hotkeys.clone();
 
-    if let Some(tsfn) = lock.tsfn.take() {
-      tsfn.abort()?;
+    if let Some(tsfn) = &mut lock.tsfn {
+      tsfn.unref(&env).is_ok()
+    } else {
+      false
     }
+  }
 
-    let mut tsfn: ThreadsafeFunction<Event, ErrorStrategy::Fatal> = callback
-      .create_threadsafe_function(0, |ctx| {
-        let event: Event = ctx.value;
-        ctx.env.create_object().and_then(|mut obj| {
-          obj.set("id", event.id)?;
-          obj.set("code", event.code)?;
-          obj.set("mods", event.mods)?;
-          obj.set("eventType", event.event_type)?;
-          Ok(vec![obj])
-        })
-      })?;
+  /**
+   * Keeps the Node.js process alive to continue listening for hotkey events.
+   *
+   * This ensures that the process will not exit until `destroy()` is called
+   * or `unref()` is used to detach the event callback from the event loop.
+   *
+   * @returns `true` if the operation succeeded, `false` otherwise.
+   *
+   * @example
+   * ```js
+   * const manager = hotk();
+   * manager.init(console.log);
+   * manager.refer(); // Keeps the process alive
+   * ```
+   */
+  #[napi]
+  pub fn refer(&self, env: Env) -> bool {
+    let mut lock = self.hotk.lock().unwrap();
 
-    if unref.unwrap_or(true) {
-      let _ = tsfn.unref(&env);
+    if let Some(tsfn) = &mut lock.tsfn {
+      tsfn.refer(&env).is_ok()
+    } else {
+      false
     }
-
-    lock.tsfn = Some(tsfn.clone());
-
-    GlobalHotKeyEvent::set_event_handler(Some(move |event: GlobalHotKeyEvent| {
-      if let Some(desc) = hotkeys.lock().unwrap().get(&event.id).cloned() {
-        let ev = Event {
-          id: event.id,
-          code: desc.code,
-          mods: desc.mods,
-          event_type: match event.state {
-            global_hotkey::HotKeyState::Pressed => code::EventType::Pressed,
-            global_hotkey::HotKeyState::Released => code::EventType::Released,
-          },
-        };
-        tsfn.call(ev, ThreadsafeFunctionCallMode::NonBlocking);
-      }
-    }));
-
-    Ok(())
   }
 
   /**
    * Stops listening for hotkey events.
    *
-   * This is required to allow the Node.js process to exit when `onEvent` was called without `unref: true`.
+   * This is required to allow the Node.js process to exit when `init` was called without `unref: true`.
    *
    * @example
    * ```js
-   * import { hotk, Mods, KeyCode } from '@hotk/core';
+   * import { hotk, Mod, KeyCode } from '@hotk/core';
    *
    * // Get the singleton instance
    * const manager = hotk();
    *
    * // Register Ctrl + A as a hotkey
-   * const result = manager.register([Mods.Control], KeyCode.KeyA);
+   * const result = manager.register([Mod.Control], KeyCode.KeyA);
    *
    * if (result.isOk()) {
    *   console.log('Hotkey successfully registered');
@@ -244,9 +292,9 @@ impl HotkManager {
    * }
    *
    * // Start listening for hotkey events without unref
-   * manager.onEvent((event) => {
+   * manager.init((event) => {
    *   console.log('Received event:', event);
-   * }, false);
+   * });
    *
    * // Stop listening after 3 seconds so the process can exit
    * setTimeout(() => {
@@ -255,13 +303,8 @@ impl HotkManager {
    * ```
    */
   #[napi]
-  pub fn destroy(&mut self) -> napi::Result<()> {
-    let mut lock = self.hotk.lock().unwrap();
-
-    if let Some(tsfn) = lock.tsfn.take() {
-      tsfn.abort()?;
-    }
-
+  pub fn destroy(&mut self, env: Env) -> napi::Result<()> {
+    self.unref(env);
     Ok(())
   }
 }

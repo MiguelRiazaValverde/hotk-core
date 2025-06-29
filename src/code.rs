@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use global_hotkey::hotkey::Modifiers;
+use global_hotkey::hotkey::{HotKey, Modifiers};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 use strum_macros::{Display, EnumString};
@@ -254,6 +254,18 @@ pub fn key_code_keys() -> Vec<String> {
 }
 
 /**
+ * Returns a list of all available mod names as strings.
+ *
+ * Useful for getting all possible mods supported by the hotkey manager.
+ *
+ * @returns {string[]} An array of mod names.
+ */
+#[napi]
+pub fn mod_keys() -> Vec<String> {
+  Mod::iter().map(|e| e.to_string()).collect()
+}
+
+/**
  * Converts a KeyCode enum variant to a human-readable string representation.
  *
  * This is useful for displaying key codes in a user-friendly format.
@@ -357,7 +369,8 @@ pub fn key_code_to_human(key_code: KeyCode) -> Option<String> {
  * Modifier keys used in hotkey combinations.
  */
 #[napi(string_enum)]
-pub enum Mods {
+#[derive(Debug, Display, EnumString, EnumIter)]
+pub enum Mod {
   Control,
   Alt,
   AltGraph,
@@ -374,42 +387,42 @@ pub enum Mods {
   Super,
 }
 
-impl Mods {
+impl Mod {
   pub fn global_hotkeys(&self) -> Modifiers {
     match self {
-      Mods::Control => Modifiers::CONTROL,
-      Mods::Alt => Modifiers::ALT,
-      Mods::Shift => Modifiers::SHIFT,
-      Mods::Super => Modifiers::SUPER,
-      Mods::AltGraph => Modifiers::ALT_GRAPH,
-      Mods::CapsLock => Modifiers::CAPS_LOCK,
-      Mods::Fn => Modifiers::FN,
-      Mods::FnLock => Modifiers::FN_LOCK,
-      Mods::Meta => Modifiers::META,
-      Mods::NumLock => Modifiers::NUM_LOCK,
-      Mods::ScrollLock => Modifiers::SCROLL_LOCK,
-      Mods::Symbol => Modifiers::SYMBOL,
-      Mods::SymbolLock => Modifiers::SYMBOL_LOCK,
-      Mods::Hyper => Modifiers::HYPER,
+      Mod::Control => Modifiers::CONTROL,
+      Mod::Alt => Modifiers::ALT,
+      Mod::Shift => Modifiers::SHIFT,
+      Mod::Super => Modifiers::SUPER,
+      Mod::AltGraph => Modifiers::ALT_GRAPH,
+      Mod::CapsLock => Modifiers::CAPS_LOCK,
+      Mod::Fn => Modifiers::FN,
+      Mod::FnLock => Modifiers::FN_LOCK,
+      Mod::Meta => Modifiers::META,
+      Mod::NumLock => Modifiers::NUM_LOCK,
+      Mod::ScrollLock => Modifiers::SCROLL_LOCK,
+      Mod::Symbol => Modifiers::SYMBOL,
+      Mod::SymbolLock => Modifiers::SYMBOL_LOCK,
+      Mod::Hyper => Modifiers::HYPER,
     }
   }
 
-  pub fn from_global_hotkeys(modifier: Modifiers) -> Option<Mods> {
+  pub fn from_global_hotkeys(modifier: Modifiers) -> Option<Mod> {
     match modifier {
-      Modifiers::CONTROL => Some(Mods::Control),
-      Modifiers::ALT => Some(Mods::Alt),
-      Modifiers::SHIFT => Some(Mods::Shift),
-      Modifiers::SUPER => Some(Mods::Super),
-      Modifiers::ALT_GRAPH => Some(Mods::AltGraph),
-      Modifiers::CAPS_LOCK => Some(Mods::CapsLock),
-      Modifiers::FN => Some(Mods::Fn),
-      Modifiers::FN_LOCK => Some(Mods::FnLock),
-      Modifiers::META => Some(Mods::Meta),
-      Modifiers::NUM_LOCK => Some(Mods::NumLock),
-      Modifiers::SCROLL_LOCK => Some(Mods::ScrollLock),
-      Modifiers::SYMBOL => Some(Mods::Symbol),
-      Modifiers::SYMBOL_LOCK => Some(Mods::SymbolLock),
-      Modifiers::HYPER => Some(Mods::Hyper),
+      Modifiers::CONTROL => Some(Mod::Control),
+      Modifiers::ALT => Some(Mod::Alt),
+      Modifiers::SHIFT => Some(Mod::Shift),
+      Modifiers::SUPER => Some(Mod::Super),
+      Modifiers::ALT_GRAPH => Some(Mod::AltGraph),
+      Modifiers::CAPS_LOCK => Some(Mod::CapsLock),
+      Modifiers::FN => Some(Mod::Fn),
+      Modifiers::FN_LOCK => Some(Mod::FnLock),
+      Modifiers::META => Some(Mod::Meta),
+      Modifiers::NUM_LOCK => Some(Mod::NumLock),
+      Modifiers::SCROLL_LOCK => Some(Mod::ScrollLock),
+      Modifiers::SYMBOL => Some(Mod::Symbol),
+      Modifiers::SYMBOL_LOCK => Some(Mod::SymbolLock),
+      Modifiers::HYPER => Some(Mod::Hyper),
       _ => None,
     }
   }
@@ -424,13 +437,29 @@ impl Mods {
 #[derive(Clone)]
 pub struct Desc {
   pub code: KeyCode,
-  pub mods: Vec<Mods>,
+  pub mods: Vec<Mod>,
 }
 
 impl Desc {
-  pub fn new(code: KeyCode, mods: Vec<Mods>) -> Self {
+  pub fn new(code: KeyCode, mods: Vec<Mod>) -> Self {
     Self { code, mods }
   }
+}
+
+/**
+ * Computes a unique identifier for the given key combination.
+ *
+ * This function takes a key code and a list of modifier keys,
+ * and returns a stable numeric ID that uniquely identifies
+ * that specific hotkey combination.
+ */
+#[napi]
+pub fn get_hotkey_id(code: KeyCode, mods: Vec<Mod>) -> u32 {
+  let mods = mods
+    .iter()
+    .map(|m| m.global_hotkeys())
+    .fold(Modifiers::empty(), |acc, m| acc | m);
+  HotKey::new(Some(mods), code.global_hotkeys()).id
 }
 
 /**
@@ -452,13 +481,13 @@ pub enum EventType {
  * Properties:
  * - `id` (number): The unique identifier of the hotkey.
  * - `code` (KeyCode): The key code associated with the hotkey.
- * - `mods` (Mods[]): An array of modifier keys (e.g., Control, Shift).
+ * - `mods` (Mod[]): An array of modifier keys (e.g., Control, Shift).
  * - `event_type` (EventType): The type of the event (pressed or released).
  */
 #[napi(object)]
 pub struct Event {
   pub id: u32,
   pub code: KeyCode,
-  pub mods: Vec<Mods>,
+  pub mods: Vec<Mod>,
   pub event_type: EventType,
 }

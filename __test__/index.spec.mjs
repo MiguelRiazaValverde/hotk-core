@@ -1,12 +1,12 @@
 import test from 'ava'
 
-import { hotk, KeyCode, Mods } from '../index.js'
+import { hotk, KeyCode, Mod } from '../index.js'
 
 test('_', async t => {
   const manager = hotk();
-  const response = manager.register([Mods.Control], KeyCode.KeyA);
+  const response = manager.register([Mod.Control], KeyCode.KeyA);
 
-  manager.onEvent(console.log);
+  manager.init(console.log);
 
   t.truthy(response.isOk());
 });
