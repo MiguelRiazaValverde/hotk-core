@@ -7,6 +7,7 @@ test('_', async t => {
   const response = manager.register([Mod.Control], KeyCode.KeyA);
 
   manager.init(console.log);
+  manager.unref();
 
   t.truthy(response.isOk());
 });
