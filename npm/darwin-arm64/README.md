@@ -1,3 +1,3 @@
 # `hotk-core-darwin-arm64`
 
-This is the **aarch64-apple-darwin** binary for `global-hotkey`
+This is the **aarch64-apple-darwin** binary for `hotk-core`
