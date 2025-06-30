@@ -1,5 +1,6 @@
 # @hotk/core
 
+[![CI](https://github.com/MiguelRiazaValverde/hotk-core/actions/workflows/CI.yml/badge.svg)](https://github.com/MiguelRiazaValverde/hotk-core/actions/workflows/CI.yml)
 [![npm version](https://img.shields.io/npm/v/@hotk/core.svg)](https://www.npmjs.com/package/@hotk/core)
 
 This package provides a minimal utility for registering and unregistering global keyboard shortcuts. It is designed as a low-level component of the @hotk ecosystem and its API may change without notice.
