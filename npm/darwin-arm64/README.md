@@ -1,3 +1,3 @@
-# `hotk-core-darwin-arm64`
+# `@hotk/core-darwin-arm64`
 
-This is the **aarch64-apple-darwin** binary for `hotk-core`
+This is the **aarch64-apple-darwin** binary for `@hotk/core`

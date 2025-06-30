@@ -1,3 +1,3 @@
-# `hotk-core-win32-x64-msvc`
+# `@hotk/core-win32-x64-msvc`
 
-This is the **x86_64-pc-windows-msvc** binary for `hotk-core`
+This is the **x86_64-pc-windows-msvc** binary for `@hotk/core`

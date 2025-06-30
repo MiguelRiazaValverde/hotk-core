@@ -1,3 +1,3 @@
-# `hotk-core-linux-x64-gnu`
+# `@hotk/core-linux-x64-gnu`
 
-This is the **x86_64-unknown-linux-gnu** binary for `hotk-core`
+This is the **x86_64-unknown-linux-gnu** binary for `@hotk/core`
