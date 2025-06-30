@@ -1,5 +1,5 @@
 {
-  "name": "hotk-core-linux-x64-gnu",
+  "name": "@hotk/core-linux-x64-gnu",
   "version": "0.0.0",
   "os": [
     "linux"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "hotk-core.linux-x64-gnu.node",
+  "main": "core.linux-x64-gnu.node",
   "files": [
-    "hotk-core.linux-x64-gnu.node"
+    "core.linux-x64-gnu.node"
   ],
   "license": "MIT",
   "engines": {

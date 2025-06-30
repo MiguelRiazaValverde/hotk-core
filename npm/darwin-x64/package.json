@@ -1,5 +1,5 @@
 {
-  "name": "hotk-core-darwin-x64",
+  "name": "@hotk/core-darwin-x64",
   "version": "0.0.0",
   "os": [
     "darwin"
@@ -7,9 +7,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "hotk-core.darwin-x64.node",
+  "main": "core.darwin-x64.node",
   "files": [
-    "hotk-core.darwin-x64.node"
+    "core.darwin-x64.node"
   ],
   "license": "MIT",
   "engines": {
