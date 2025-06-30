@@ -12,6 +12,8 @@ The `init` method accepts a callback to receive hotkey events and an optional bo
 | macOS    |    ❓     |   ❌   |
 | Linux    |    ❓     |   ❌   |
 
+## Basic usage
+
 ```js
 import { hotk, KeyCode, Mod } from "@hotk/core";
 
